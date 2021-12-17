@@ -44,7 +44,7 @@ class EVM extends KYVE {
     return batch.map((b) => ({
       type: "put",
       key: b.number,
-      value: this.type.encode(b).finish(),
+      value: this.type.encode(JSON.parse(JSON.stringify(b))).finish(),
     }));
   }
 
