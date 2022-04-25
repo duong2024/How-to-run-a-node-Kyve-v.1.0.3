@@ -8,67 +8,80 @@
 
 > Note: The whole documentation on how to run a protocol node can be found [here](https://docs.kyve.network/intro/protocol-node.html)
 
-## How to get the evm binaries
-
-### Requirements
+## Requirements
 
 Wallets
 
 - A [Keplr](https://keplr.app) wallet with $KYVE. (You can claim some [here](https://app.kyve.network/faucet))
 - An [Arweave](https://arweave.org/) keyfile with some AR. (You can claim some [here](https://faucet.arweave.net/))
-
 Minimum hardware requirements
 
+- Ubuntu 20.04
 - 1vCPU
 - 4GB RAM
 - 1GB DISK
 
-### Get the prebuilt binaries
-
-The prebuilt binaries for every operating system can be downloaded at the [EVM repository](https://github.com/KYVENetwork/evm) under `releases`.
-
-### Manually build the binaries
-
-Since we want to run a protocol node on a `@kyve/evm` runtime pool we have to clone the correct repository. In our
-case clone the [EVM repository](https://github.com/KYVENetwork/evm) and make sure your are on branch `main`.
+### update all packages and install unzip
 
 ```
-git clone https://github.com/KYVENetwork/evm.git
-cd evm
+sudo apt update && apt install unzip
 ```
 
-Now run the following commands to install dependencies and build the binaries
+Create a directory, go there and download the binary
 
 ```
-yarn install
-yarn build:binaries
+mkdir -p /home/kyve
+cd /home/kyve && wget https://github.com/KYVENetwork/evm/releases/download/v1.0.3/evm-linux.zip && unzip evm-linux.zip
 ```
 
-> Note: In the future we will add Docker support and release the prebuilt binaries to GitHub
-
-### Verify that your binary has been built correctly
-
-The step above should have created a directory called `out` with three binaries. Now execute the correct binary that matches your operating system using the following command (example is on a MacOS machine)
-
+> version check
 ```
-./out/evm-macos --help
+cd /home/kyve && ./evm-linux --version
 ```
 
-If everything is set up correctly you should see the following
+### make the binary executable
 
 ```
-Usage: @kyve/evm [options]
-
-Options:
-  --name <string>           The identifier name of the node. [optional, default = auto generated]
-  -p, --poolId <number>     The id of the pool you want to run on.
-  -m, --mnemonic <string>   Your mnemonic of your account.
-  -k, --keyfile <string>    The path to your Arweave keyfile.
-  -n, --network <string>    The chain id of the network. [optional, default = beta] (default: "beta")
-  -sp, --space <number>     The size of disk space in bytes the node is allowed to use. [optional, default = 1000000000 (1 GB)] (default: "1000000000")
-  -b, --batchSize <number>  The batch size of fetching items from datasource. For synchronous fetching enter 1. [optional, default = 1] (default: "1")
-  --metrics                 Run Prometheus metrics server. [optional, default = false] (default: false)
-  -v, --verbose             Run node in verbose mode. [optional, default = false] (default: false)
-  --version                 output the version number
-  -h, --help                display help for command
+chmod +x evm-linux
 ```
+
+###  Building
+
+Copy the json to the /home/kyve folder, after renaming your json file to arweave.json
+
+Next we create the service. We change only your data, marked below.
+
+```
+sudo tee /etc/systemd/system/kyved.service > /dev/null <<EOF
+[Unit]
+Description=Kyve Node
+After=network-online.target
+[Service]
+User=root
+WorkingDirectory=/home/kyve/
+ExecStart=/home/kyve/evm-linux -m “mnemonic phrase” -k /home/kyve/arweave.json -p 0 or 1 -v -s your amount stake
+Restart=on-failure
+RestartSec=3
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+### Next, we start our service
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable kyved
+sudo systemctl start kyved
+```
+### View logs
+```
+journalctl -f -u kyved
+```
+### Congratulations, you have become a validator!
+
+
+
+
+
